@@ -34,16 +34,30 @@ impl<F: FloatMlxElement> IntTensorOps<Self> for Mlx<F> {
         // Read according to the array's actual dtype and convert to i32.
         let data: Vec<i32> = match tensor.array.dtype() {
             mlx_rs::Dtype::Int32 => tensor.array.as_slice::<i32>().to_vec(),
-            mlx_rs::Dtype::Uint32 => {
-                tensor.array.as_slice::<u32>().iter().map(|&v| v as i32).collect()
-            }
-            mlx_rs::Dtype::Int64 => {
-                tensor.array.as_slice::<i64>().iter().map(|&v| v as i32).collect()
-            }
-            mlx_rs::Dtype::Uint8 => {
-                tensor.array.as_slice::<u8>().iter().map(|&v| v as i32).collect()
-            }
-            _ => tensor.array.as_type::<i32>().expect("cast to i32").as_slice::<i32>().to_vec(),
+            mlx_rs::Dtype::Uint32 => tensor
+                .array
+                .as_slice::<u32>()
+                .iter()
+                .map(|&v| v as i32)
+                .collect(),
+            mlx_rs::Dtype::Int64 => tensor
+                .array
+                .as_slice::<i64>()
+                .iter()
+                .map(|&v| v as i32)
+                .collect(),
+            mlx_rs::Dtype::Uint8 => tensor
+                .array
+                .as_slice::<u8>()
+                .iter()
+                .map(|&v| v as i32)
+                .collect(),
+            _ => tensor
+                .array
+                .as_type::<i32>()
+                .expect("cast to i32")
+                .as_slice::<i32>()
+                .to_vec(),
         };
         Ok(TensorData::new(data, shape))
     }
@@ -274,10 +288,7 @@ impl<F: FloatMlxElement> IntTensorOps<Self> for Mlx<F> {
         MlxTensorPrimitive::new(array)
     }
 
-    fn int_gather_nd(
-        data: MlxTensorPrimitive,
-        indices: MlxTensorPrimitive,
-    ) -> MlxTensorPrimitive {
+    fn int_gather_nd(data: MlxTensorPrimitive, indices: MlxTensorPrimitive) -> MlxTensorPrimitive {
         let array = crate::ops::base::gather_nd_array(
             &data.array,
             &data.shape,
@@ -418,7 +429,10 @@ impl<F: FloatMlxElement> IntTensorOps<Self> for Mlx<F> {
     }
 
     fn int_sum(tensor: MlxTensorPrimitive) -> MlxTensorPrimitive {
-        let array = mlx_rs::ops::sum(&tensor.array, false).expect("Failed to sum");
+        let array = mlx_rs::ops::sum(&tensor.array, false)
+            .expect("Failed to sum")
+            .reshape(&[1])
+            .expect("Failed to reshape sum to [1]");
         MlxTensorPrimitive::new(array)
     }
 
@@ -429,7 +443,10 @@ impl<F: FloatMlxElement> IntTensorOps<Self> for Mlx<F> {
     }
 
     fn int_prod(tensor: MlxTensorPrimitive) -> MlxTensorPrimitive {
-        let array = mlx_rs::ops::prod(&tensor.array, false).expect("Failed to prod");
+        let array = mlx_rs::ops::prod(&tensor.array, false)
+            .expect("Failed to prod")
+            .reshape(&[1])
+            .expect("Failed to reshape prod to [1]");
         MlxTensorPrimitive::new(array)
     }
 
@@ -447,11 +464,17 @@ impl<F: FloatMlxElement> IntTensorOps<Self> for Mlx<F> {
 
     fn int_argmax(tensor: MlxTensorPrimitive, dim: usize) -> MlxTensorPrimitive {
         let array = argmax_axis(&tensor.array, dim as i32, true).expect("Failed to argmax");
+        let array = array
+            .as_type::<i32>()
+            .expect("Failed to cast argmax to i32");
         MlxTensorPrimitive::new(array)
     }
 
     fn int_argmin(tensor: MlxTensorPrimitive, dim: usize) -> MlxTensorPrimitive {
         let array = argmin_axis(&tensor.array, dim as i32, true).expect("Failed to argmin");
+        let array = array
+            .as_type::<i32>()
+            .expect("Failed to cast argmin to i32");
         MlxTensorPrimitive::new(array)
     }
 

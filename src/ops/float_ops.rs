@@ -426,7 +426,10 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     }
 
     fn float_sum(tensor: MlxTensorPrimitive) -> MlxTensorPrimitive {
-        let array = mlx_rs::ops::sum(&tensor.array, false).expect("Failed to sum");
+        let array = mlx_rs::ops::sum(&tensor.array, false)
+            .expect("Failed to sum")
+            .reshape(&[1])
+            .expect("Failed to reshape sum to [1]");
         MlxTensorPrimitive::new(array)
     }
 
@@ -437,7 +440,10 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     }
 
     fn float_prod(tensor: MlxTensorPrimitive) -> MlxTensorPrimitive {
-        let array = mlx_rs::ops::prod(&tensor.array, false).expect("Failed to prod");
+        let array = mlx_rs::ops::prod(&tensor.array, false)
+            .expect("Failed to prod")
+            .reshape(&[1])
+            .expect("Failed to reshape prod to [1]");
         MlxTensorPrimitive::new(array)
     }
 
@@ -448,7 +454,10 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     }
 
     fn float_mean(tensor: MlxTensorPrimitive) -> MlxTensorPrimitive {
-        let array = mlx_rs::ops::mean(&tensor.array, false).expect("Failed to mean");
+        let array = mlx_rs::ops::mean(&tensor.array, false)
+            .expect("Failed to mean")
+            .reshape(&[1])
+            .expect("Failed to reshape mean to [1]");
         MlxTensorPrimitive::new(array)
     }
 
@@ -521,20 +530,46 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     fn float_argmax(
         tensor: MlxTensorPrimitive,
         dim: usize,
-        _out_dtype: IntDType,
+        out_dtype: IntDType,
     ) -> MlxTensorPrimitive {
         let array = mlx_rs::ops::indexing::argmax_axis(&tensor.array, dim as i32, true)
             .expect("Failed to argmax");
+        let array = match out_dtype {
+            IntDType::I32
+            | IntDType::U32
+            | IntDType::I16
+            | IntDType::U16
+            | IntDType::I8
+            | IntDType::U8 => array
+                .as_type::<i32>()
+                .expect("Failed to cast argmax to i32"),
+            IntDType::I64 | IntDType::U64 => array
+                .as_type::<i64>()
+                .expect("Failed to cast argmax to i64"),
+        };
         MlxTensorPrimitive::new(array)
     }
 
     fn float_argmin(
         tensor: MlxTensorPrimitive,
         dim: usize,
-        _out_dtype: IntDType,
+        out_dtype: IntDType,
     ) -> MlxTensorPrimitive {
         let array = mlx_rs::ops::indexing::argmin_axis(&tensor.array, dim as i32, true)
             .expect("Failed to argmin");
+        let array = match out_dtype {
+            IntDType::I32
+            | IntDType::U32
+            | IntDType::I16
+            | IntDType::U16
+            | IntDType::I8
+            | IntDType::U8 => array
+                .as_type::<i32>()
+                .expect("Failed to cast argmin to i32"),
+            IntDType::I64 | IntDType::U64 => array
+                .as_type::<i64>()
+                .expect("Failed to cast argmin to i64"),
+        };
         MlxTensorPrimitive::new(array)
     }
 
@@ -806,27 +841,27 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     ) -> MlxTensorPrimitive {
         let dim_i32 = dim as i32;
 
-        let a0 = take_axis(&lhs.array, &Array::from_int(0), dim_i32).expect("take");
-        let a1 = take_axis(&lhs.array, &Array::from_int(1), dim_i32).expect("take");
-        let a2 = take_axis(&lhs.array, &Array::from_int(2), dim_i32).expect("take");
+        let a0 = take_axis(&lhs.array, Array::from_int(0), dim_i32).expect("take");
+        let a1 = take_axis(&lhs.array, Array::from_int(1), dim_i32).expect("take");
+        let a2 = take_axis(&lhs.array, Array::from_int(2), dim_i32).expect("take");
 
-        let b0 = take_axis(&rhs.array, &Array::from_int(0), dim_i32).expect("take");
-        let b1 = take_axis(&rhs.array, &Array::from_int(1), dim_i32).expect("take");
-        let b2 = take_axis(&rhs.array, &Array::from_int(2), dim_i32).expect("take");
+        let b0 = take_axis(&rhs.array, Array::from_int(0), dim_i32).expect("take");
+        let b1 = take_axis(&rhs.array, Array::from_int(1), dim_i32).expect("take");
+        let b2 = take_axis(&rhs.array, Array::from_int(2), dim_i32).expect("take");
 
         let r0 = mlx_rs::ops::subtract(
-            &mlx_rs::ops::multiply(&a1, &b2).expect("mul"),
-            &mlx_rs::ops::multiply(&a2, &b1).expect("mul"),
+            mlx_rs::ops::multiply(&a1, &b2).expect("mul"),
+            mlx_rs::ops::multiply(&a2, &b1).expect("mul"),
         )
         .expect("sub");
         let r1 = mlx_rs::ops::subtract(
-            &mlx_rs::ops::multiply(&a2, &b0).expect("mul"),
-            &mlx_rs::ops::multiply(&a0, &b2).expect("mul"),
+            mlx_rs::ops::multiply(&a2, &b0).expect("mul"),
+            mlx_rs::ops::multiply(&a0, &b2).expect("mul"),
         )
         .expect("sub");
         let r2 = mlx_rs::ops::subtract(
-            &mlx_rs::ops::multiply(&a0, &b1).expect("mul"),
-            &mlx_rs::ops::multiply(&a1, &b0).expect("mul"),
+            mlx_rs::ops::multiply(&a0, &b1).expect("mul"),
+            mlx_rs::ops::multiply(&a1, &b0).expect("mul"),
         )
         .expect("sub");
 

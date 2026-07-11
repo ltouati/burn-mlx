@@ -53,8 +53,13 @@ impl TensorMetadata for MlxTensorPrimitive {
             mlx_rs::Dtype::Float16 => DType::F16,
             mlx_rs::Dtype::Bfloat16 => DType::BF16,
             mlx_rs::Dtype::Float64 => DType::F64,
-            mlx_rs::Dtype::Int32 => DType::I32,
-            mlx_rs::Dtype::Int64 => DType::I64,
+            mlx_rs::Dtype::Int32
+            | mlx_rs::Dtype::Uint32
+            | mlx_rs::Dtype::Int16
+            | mlx_rs::Dtype::Uint16
+            | mlx_rs::Dtype::Int8
+            | mlx_rs::Dtype::Uint8 => DType::I32,
+            mlx_rs::Dtype::Int64 | mlx_rs::Dtype::Uint64 => DType::I64,
             mlx_rs::Dtype::Bool => DType::Bool(burn_tensor::BoolStore::Native),
             _ => DType::F32, // Default fallback
         }
@@ -205,6 +210,7 @@ impl<F: FloatMlxElement> Backend for Mlx<F> {
 }
 
 /// Get the current seed value.
+#[allow(dead_code)]
 pub fn get_seed() -> u64 {
     SEED.load(Ordering::SeqCst)
 }
