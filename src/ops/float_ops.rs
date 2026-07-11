@@ -76,7 +76,36 @@ impl<F: FloatMlxElement> FloatTensorOps<Self> for Mlx<F> {
     async fn float_into_data(tensor: MlxTensorPrimitive) -> Result<TensorData, ExecutionError> {
         tensor.array.eval().expect("Failed to evaluate tensor");
         let shape = tensor.shape().to_vec();
-        let data: Vec<F> = F::array_to_vec(&tensor.array);
+        let data: Vec<F> = match tensor.array.dtype() {
+            mlx_rs::Dtype::Float32 => {
+                let slice = tensor.array.as_slice::<f32>();
+                slice.iter().map(|&v| F::from_f32(v).unwrap()).collect()
+            }
+            mlx_rs::Dtype::Float16 => {
+                let slice = tensor.array.as_slice::<f16>();
+                slice
+                    .iter()
+                    .map(|&v| F::from_f32(v.to_f32()).unwrap())
+                    .collect()
+            }
+            mlx_rs::Dtype::Bfloat16 => {
+                let slice = tensor.array.as_slice::<bf16>();
+                slice
+                    .iter()
+                    .map(|&v| F::from_f32(v.to_f32()).unwrap())
+                    .collect()
+            }
+            mlx_rs::Dtype::Float64 => {
+                let slice = tensor
+                    .array
+                    .as_type::<f32>()
+                    .expect("cast f64 to f32")
+                    .as_slice::<f32>()
+                    .to_vec();
+                slice.iter().map(|&v| F::from_f32(v).unwrap()).collect()
+            }
+            _ => F::array_to_vec(&tensor.array),
+        };
         Ok(TensorData::new(data, shape))
     }
 
